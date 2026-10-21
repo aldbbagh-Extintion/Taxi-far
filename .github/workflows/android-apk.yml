@@ -8,6 +8,9 @@ concurrency:
   group: android-apk-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -58,3 +61,13 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish APK to "latest" release (easy phone download)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk taxi-meter.apk
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest taxi-meter.apk --title "عداد التاكسي — آخر نسخة تجريبية" \
+            --notes "نسخة debug مبنية تلقائيًا من آخر commit (${GITHUB_SHA::7}). للتجربة فقط." --target "$GITHUB_SHA"
