@@ -5,11 +5,6 @@
 وما بيستخدم أي خدمة مدفوعة من Google Maps. الشرط الوحيد: يكون الجهاز فيه **خدمات Google Play** (أغلب أجهزة أندرويد؛
 أجهزة هواوي الحديثة بدون GMS ما رح يشتغل عليها التتبّع).
 
-> ملاحظة للفريق: يُفضّل نضيف هذا السكربت لـ `package.json`:
-> ```json
-> "build:android": "ng build && npx cap sync android"
-> ```
-
 ---
 
 ## الطريقة (أ): GitHub Actions — بدون ما تنزّل إشي على جهازك
@@ -28,8 +23,7 @@
 
 ```bash
 npm ci
-npm run build            # ng build
-npx cap sync android     # ينسخ الويب ويحدّث مشروع أندرويد
+npm run build:android    # ng build + cap sync android
 npx cap open android     # يفتح المشروع بـ Android Studio
 ```
 
