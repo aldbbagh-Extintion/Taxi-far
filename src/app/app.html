@@ -1,0 +1,24 @@
+<div class="shell">
+  <main class="content">
+    <router-outlet />
+  </main>
+
+  @if (showNav()) {
+    <nav class="tabbar" aria-label="التنقل الرئيسي">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path [attr.d]="icon.home" /></svg>
+        <span>الرئيسية</span>
+      </a>
+      <a routerLink="/history" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path [attr.d]="icon.history" /></svg>
+        <span>السجل</span>
+      </a>
+      <a routerLink="/settings" routerLinkActive="active" ariaCurrentWhenActive="page">
+        <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path [attr.d]="icon.settings" /></svg>
+        <span>الإعدادات</span>
+      </a>
+    </nav>
+  }
+</div>
+
+<app-overlays />

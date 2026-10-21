@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon (white silhouette, stopwatch). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <!-- top button -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9,1h6v2h-6z" />
+    <!-- ring: outer circle r=9 minus inner r=7, centred at 12,13 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,4a9,9 0,1 1,0 18a9,9 0,1 1,0 -18zM12,6a7,7 0,1 0,0 14a7,7 0,1 0,0 -14z" />
+    <!-- hand -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11.3,12.3L15.6,8.6L16.9,9.9L12.7,13.7z" />
+    <!-- hub -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,11.5a1.5,1.5 0,1 1,0 3a1.5,1.5 0,1 1,0 -3z" />
+</vector>

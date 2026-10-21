@@ -1,0 +1,56 @@
+<div class="page">
+  <header class="page-header"><h1>السجل</h1></header>
+
+  @if (trips() === null) {
+    <p class="muted center">جاري التحميل…</p>
+  } @else if (!trips()!.length) {
+    <section class="card empty">
+      <p>لسا ما في رحلات محفوظة.</p>
+      <a class="btn btn-primary" routerLink="/">ابدأ رحلة</a>
+    </section>
+  } @else {
+    <nav class="months" aria-label="اختيار الشهر">
+      @for (m of months(); track m) {
+        <button type="button" class="month" [class.on]="m === month()" [attr.aria-pressed]="m === month()"
+                (click)="pick(m)">{{ monthLabel(m) }}</button>
+      }
+    </nav>
+
+    <section class="card sum">
+      <div>
+        <p class="muted">مجموع {{ monthLabel(month()) }}</p>
+        <p class="sum-val"><span class="num">{{ jd(total()) }}</span> <small>د.أ</small></p>
+      </div>
+      <p class="count"><span class="num">{{ rows().length }}</span> رحلة</p>
+      <p class="muted small">المدفوع حسب العداد إذا مسجّل، غير هيك التقدير.</p>
+    </section>
+
+    <ul class="list">
+      @for (r of rows(); track r.t.id) {
+        <li>
+          <a class="card trip" [routerLink]="['/history', r.t.id]">
+            <span class="top">
+              <span class="date iso">{{ fmtDate(r.t.start) }}</span>
+              <span class="amt"><span class="num">{{ jd(r.t.meter ?? r.t.fare) }}</span> د.أ</span>
+            </span>
+            <span class="meta muted">
+              <span class="num">{{ km(r.t.distanceKm) }}</span> كم · <span class="num">{{ mmss(r.t.durationSec) }}</span> · {{ periodName(r.t.period) }}
+              @if (r.t.meter) { · تقدير <span class="num">{{ jd(r.t.fare) }}</span> }
+            </span>
+            @if (r.v || r.t.note) {
+              <span class="foot">
+                @if (r.v) { <span class="tag" [class]="'tag ' + r.v.cls">{{ r.v.short }}</span> }
+                @if (r.t.note) { <span class="note">{{ r.t.note }}</span> }
+              </span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="tools">
+    <button type="button" class="btn btn-ghost" (click)="exportAll()">تصدير Excel (CSV)</button>
+    <button type="button" class="btn btn-ghost-danger" (click)="clearAll()">مسح كل السجل</button>
+  </div>
+</div>

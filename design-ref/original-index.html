@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>عداد التاكسي</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --bg:#f4f4f0; --card:#fff; --ink:#111827; --muted:#6b7280; --line:#e5e7eb;
+    --yellow:#f5c400; --yellow-ink:#3d3100; --go:#15803d; --stop:#b91c1c; --warn:#b45309;
+    --warn-bg:#fff7e6; --ok-bg:#ecfdf3; --bad-bg:#fef2f2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0b0f17; --card:#151b26; --ink:#f3f4f6; --muted:#9ca3af; --line:#263042;
+      --warn-bg:#2a2112; --ok-bg:#0f2a1b; --bad-bg:#2b1414; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+  .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  h1{font-size:18px;margin:0}
+  header{display:flex;align-items:center;gap:10px}
+  header img{width:36px;height:36px;border-radius:9px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .meter{background:#111827;color:#fff;border-radius:18px;padding:18px 18px 14px;text-align:center}
+  .meter .lbl{font-size:13px;opacity:.7}
+  .meter .fare{font-variant-numeric:tabular-nums;font-size:54px;font-weight:800;letter-spacing:1px;
+    color:var(--yellow);line-height:1.15;direction:ltr}
+  .meter .fare small{font-size:20px;font-weight:600;margin-inline-start:6px}
+  .meter .sub{display:flex;justify-content:space-around;margin-top:10px;font-size:14px}
+  .meter .sub b{display:block;font-size:18px;font-variant-numeric:tabular-nums;direction:ltr}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;margin-top:8px;
+    background:#273244;color:#d1d5db}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  button{font:inherit;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .b-go{background:var(--go);color:#fff}
+  .b-stop{background:var(--stop);color:#fff}
+  .b-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+  .b-yellow{background:var(--yellow);color:var(--yellow-ink)}
+  .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .row:last-child{border-bottom:0}
+  .row span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
+  .muted{color:var(--muted);font-size:13px}
+  .alert{border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.6}
+  .alert.warn{background:var(--warn-bg);color:var(--warn)}
+  .alert.ok{background:var(--ok-bg);color:var(--go)}
+  .alert.bad{background:var(--bad-bg);color:var(--stop)}
+  .hidden{display:none!important}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input,select{font:inherit;width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--bg);color:var(--ink)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  details summary{cursor:pointer;font-weight:700;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"▾";float:left;color:var(--muted)}
+  details[open] summary::after{content:"▴"}
+  .trip{padding:10px 0;border-bottom:1px solid var(--line)}
+  .trip:last-child{border-bottom:0}
+  .trip .top{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+  .trip .del{background:none;border:0;color:var(--muted);padding:0 4px;font-size:18px;font-weight:400}
+  .tag{font-size:12px;padding:1px 8px;border-radius:999px;margin-inline-start:4px}
+  .tag.ok{background:var(--ok-bg);color:var(--go)} .tag.bad{background:var(--bad-bg);color:var(--stop)}
+  .tag.warn{background:var(--warn-bg);color:var(--warn)}
+  .head2{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .ltr{direction:ltr;unicode-bidi:embed}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="icons/icon-192.png" alt="">
+    <div>
+      <h1>عداد التاكسي</h1>
+      <div class="muted">قارن عداد التكسي، وسجّل مشاويرك</div>
+    </div>
+  </header>
+
+  <div id="resumeBox" class="alert warn hidden">
+    في رحلة ما انتهت من قبل (بدأت <b id="resumeStart"></b>).
+    <div class="controls" style="margin-top:8px">
+      <button class="b-go" id="resumeBtn">كمّل الرحلة</button>
+      <button class="b-ghost" id="discardBtn">احذفها</button>
+    </div>
+  </div>
+
+  <section class="meter">
+    <div class="lbl" id="meterLbl">الأجرة</div>
+    <div class="fare"><span id="fare">0.000</span><small>د.أ</small></div>
+    <div class="sub">
+      <div>المسافة<b id="dist">0.00 كم</b></div>
+      <div>المدة<b id="dur">00:00</b></div>
+      <div>انتظار<b id="wait">00:00</b></div>
+    </div>
+    <span class="pill" id="period">—</span>
+    <span class="pill" id="gps">الموقع متوقف</span>
+  </section>
+
+  <div class="controls">
+    <button class="b-go" id="startBtn">▶ بدء الرحلة</button>
+    <button class="b-stop" id="stopBtn" disabled>■ إنهاء الرحلة</button>
+  </div>
+
+  <div id="liveWarn" class="alert warn hidden"></div>
+  <div class="alert warn" id="screenTip">
+    خلّي الشاشة مفتوحة والتطبيق قدامك طول الرحلة. إذا سكّرت الشاشة أو فتحت تطبيق ثاني، التتبع بيوقف.
+  </div>
+
+  <!-- نتيجة الرحلة -->
+  <section class="card hidden" id="resultCard">
+    <div class="head2"><b>انتهت الرحلة</b><span class="muted" id="resWhen"></span></div>
+    <div style="margin-top:8px">
+      <div class="row"><span>فتحة العداد</span><span class="ltr" id="rBase"></span></div>
+      <div class="row"><span>المسافة (<span id="rKm"></span>)</span><span class="ltr" id="rDist"></span></div>
+      <div class="row"><span>الانتظار (<span id="rWaitT"></span>)</span><span class="ltr" id="rWait"></span></div>
+      <div class="row" id="rMinRow"><span>تم تطبيق الحد الأدنى</span><span class="ltr" id="rMin"></span></div>
+      <div class="row"><span>الأجرة المقدّرة</span><span class="ltr" id="rFare" style="font-size:18px"></span></div>
+    </div>
+    <div id="rQuality" class="alert warn hidden" style="margin-top:8px"></div>
+
+    <label for="meterIn">شو قرا عداد التكسي؟ (اختياري)</label>
+    <input id="meterIn" type="number" inputmode="decimal" step="0.001" min="0" placeholder="مثلاً 2.450">
+    <div id="cmp" class="alert hidden" style="margin-top:8px"></div>
+
+    <label for="noteIn">ملاحظة / الغرض (اختياري)</label>
+    <input id="noteIn" type="text" maxlength="120" placeholder="مثلاً: اجتماع وزارة الزراعة">
+
+    <div class="controls" style="margin-top:12px">
+      <button class="b-yellow" id="saveBtn">حفظ الرحلة</button>
+      <button class="b-ghost" id="dropBtn">تجاهل</button>
+    </div>
+  </section>
+
+  <!-- السجل -->
+  <section class="card">
+    <div class="head2">
+      <b>رحلاتي</b>
+      <select id="monthSel" style="width:auto"></select>
+    </div>
+    <div class="muted" id="monthTotal" style="margin-top:6px"></div>
+    <div id="trips" style="margin-top:6px"></div>
+    <div class="controls" style="margin-top:10px">
+      <button class="b-ghost" id="csvBtn">⬇ تصدير Excel (CSV)</button>
+      <button class="b-ghost" id="clearBtn">مسح كل السجل</button>
+    </div>
+  </section>
+
+  <!-- الإعدادات -->
+  <section class="card">
+    <details id="settings">
+      <summary>إعدادات التعرفة</summary>
+      <p class="muted" style="line-height:1.7">
+        القيم الافتراضية: فتحة العداد والكيلومتر حسب تعرفة <b>11 أيار 2026</b>.
+        تعرفة الانتظار آخر قيمة رسمية معلنة (حزيران 2025).
+        الحد الأدنى (1.00 د.أ) ومواعيد الفترتين (8:00 نهاري، 20:00 ليلي) نفس النسخة الأصلية.
+      </p>
+      <div class="grid2">
+        <div><label>فتحة العداد نهارًا (د.أ)</label><input id="s_dBase" type="number" step="0.001"></div>
+        <div><label>فتحة العداد ليلًا (د.أ)</label><input id="s_nBase" type="number" step="0.001"></div>
+        <div><label>الكيلومتر نهارًا (د.أ)</label><input id="s_dKm" type="number" step="0.001"></div>
+        <div><label>الكيلومتر ليلًا (د.أ)</label><input id="s_nKm" type="number" step="0.001"></div>
+        <div><label>انتظار/35ث نهارًا (د.أ)</label><input id="s_dWait" type="number" step="0.001"></div>
+        <div><label>انتظار/35ث ليلًا (د.أ)</label><input id="s_nWait" type="number" step="0.001"></div>
+        <div><label>بداية النهار (ساعة)</label><input id="s_dayH" type="number" min="0" max="23" step="1"></div>
+        <div><label>بداية الليل (ساعة)</label><input id="s_nightH" type="number" min="0" max="23" step="1"></div>
+        <div><label>الحد الأدنى للأجرة (0 = بدون)</label><input id="s_min" type="number" step="0.01" min="0"></div>
+      </div>
+      <div class="controls" style="margin-top:12px">
+        <button class="b-yellow" id="sSave">حفظ الإعدادات</button>
+        <button class="b-ghost" id="sReset">القيم الافتراضية</button>
+      </div>
+      <div class="muted" id="sMsg" style="margin-top:6px"></div>
+    </details>
+  </section>
+
+  <p class="muted" style="text-align:center;line-height:1.7">
+    الرقم تقديري حسب الـ GPS، والعداد المعتمد هو المرجع الرسمي.<br>
+    فرق لحد ~5–8% طبيعي؛ فرق أكبر بكثير يستاهل تسأل السائق.
+  </p>
+</div>
+
+<script src="fare.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const KEY_TRIPS = 'taxi_trips_v2', KEY_ACTIVE = 'taxi_active_v2', KEY_TARIFF = 'taxi_tariff_v2';
+
+// ===== تخزين آمن =====
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+// ===== أدوات عرض =====
+const jd = n => (Math.round(n*1000)/1000).toFixed(3);
+const mmss = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return (h ? h+':' : '') + String(m).padStart(2,'0') + ':' + String(x).padStart(2,'0'); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = ms => new Date(ms).toLocaleString('ar-JO', {dateStyle:'medium', timeStyle:'short'});
+const periodName = p => p === 'day' ? 'تعرفة نهارية' : 'تعرفة ليلية';
+
+// ===== التعرفة =====
+function getTariff(){
+  const t = store.get(KEY_TARIFF, null);
+  return t && t.day && t.night ? t : JSON.parse(JSON.stringify(TaxiFare.DEFAULT_TARIFF));
+}
+function fillSettings(t){
+  $('s_dBase').value = t.day.base; $('s_nBase').value = t.night.base;
+  $('s_dKm').value = t.day.perKm;  $('s_nKm').value = t.night.perKm;
+  $('s_dWait').value = t.day.waitPer35s; $('s_nWait').value = t.night.waitPer35s;
+  $('s_dayH').value = t.dayStartHour; $('s_nightH').value = t.nightStartHour;
+  $('s_min').value = t.minFare;
+}
+$('sSave').onclick = () => {
+  const n = id => parseFloat($(id).value);
+  const vals = [n('s_dBase'),n('s_nBase'),n('s_dKm'),n('s_nKm'),n('s_dWait'),n('s_nWait'),n('s_min')];
+  const hs = [parseInt($('s_dayH').value,10), parseInt($('s_nightH').value,10)];
+  if (vals.some(v => !isFinite(v) || v < 0) || hs.some(h => !(h >= 0 && h <= 23)) || hs[0] === hs[1]) {
+    $('sMsg').textContent = 'في قيمة غلط، تأكد من الأرقام.'; return;
+  }
+  const t = { version:'custom', dayStartHour:hs[0], nightStartHour:hs[1],
+    day:{base:vals[0], perKm:vals[2], waitPer35s:vals[4]},
+    night:{base:vals[1], perKm:vals[3], waitPer35s:vals[5]}, minFare:vals[6] };
+  store.set(KEY_TARIFF, t);
+  $('sMsg').textContent = 'انحفظت. بتنطبق من الرحلة الجاية.';
+};
+$('sReset').onclick = () => { store.del(KEY_TARIFF); fillSettings(getTariff()); $('sMsg').textContent = 'رجعت القيم الافتراضية.'; };
+
+// ===== حالة الرحلة =====
+let trip = null, watchId = null, ticker = null, wakeLock = null, lastAcc = null, speedSeen = false;
+let hiddenAt = null, pending = null, gpsWarn = false;
+
+function render(){
+  if (!trip) return;
+  const s = TaxiFare.summary(trip, Date.now());
+  $('fare').textContent = jd(s.fare);
+  $('dist').textContent = s.distanceKm.toFixed(2) + ' كم';
+  $('dur').textContent = mmss(s.durationSec);
+  $('wait').textContent = mmss(s.waitingSec);
+  $('period').textContent = periodName(s.period);
+  let g;
+  if (!trip.fixes) g = 'بيدوّر على الموقع…';
+  else if (s.lastFixAgeSec > 15) g = 'ما في إشارة من ' + Math.round(s.lastFixAgeSec) + ' ث';
+  else g = 'دقة الموقع ' + Math.round(lastAcc ?? 0) + ' م' + (speedSeen ? ' · سرعة الجهاز' : '');
+  $('gps').textContent = g;
+}
+
+function persist(){ if (trip) store.set(KEY_ACTIVE, trip); }
+
+function onPos(pos){
+  if (!trip) return;
+  const c = pos.coords;
+  lastAcc = c.accuracy;
+  if (gpsWarn) { gpsWarn = false; showWarn(''); }
+  if (typeof c.speed === 'number' && isFinite(c.speed)) speedSeen = true;
+  TaxiFare.addFix(trip, { lat:c.latitude, lon:c.longitude, accuracy:c.accuracy, speed:c.speed, ts:pos.timestamp || Date.now() });
+  persist();
+  render();
+}
+function onErr(e){
+  const msg = e.code === 1 ? 'رفضت إذن الموقع. فعّله من إعدادات المتصفح عشان العداد يشتغل.'
+            : e.code === 2 ? 'الموقع مش متوفر حاليًا. تأكد إن الـ GPS شغال.'
+            : 'الـ GPS بطيء بالاستجابة…';
+  gpsWarn = true; showWarn(msg);
+  if (e.code === 1) endTracking();
+}
+function showWarn(m){ $('liveWarn').textContent = m; $('liveWarn').classList.toggle('hidden', !m); }
+
+async function lockScreen(){
+  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {}
+}
+function startTracking(){
+  watchId = navigator.geolocation.watchPosition(onPos, onErr, { enableHighAccuracy:true, maximumAge:0, timeout:15000 });
+  ticker = setInterval(render, 1000);
+  lockScreen();
+  $('startBtn').disabled = true; $('stopBtn').disabled = false;
+  $('meterLbl').textContent = 'الأجرة (الرحلة شغّالة)';
+  render();
+}
+function endTracking(){
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = null; clearInterval(ticker); ticker = null;
+  try { wakeLock && wakeLock.release(); } catch(e) {}
+  wakeLock = null;
+  $('startBtn').disabled = false; $('stopBtn').disabled = true;
+  $('meterLbl').textContent = 'الأجرة';
+}
+
+$('startBtn').onclick = () => {
+  if (!('geolocation' in navigator)) { showWarn('المتصفح ما بيدعم تحديد الموقع.'); return; }
+  if (pending && !confirm('في رحلة منتهية ما انحفظت. بدك تتجاهلها وتبلش رحلة جديدة؟')) return;
+  hideResult();
+  trip = TaxiFare.createTrip(Date.now(), getTariff());
+  speedSeen = false; lastAcc = null; showWarn('');
+  persist(); startTracking();
+};
+
+$('stopBtn').onclick = () => {
+  if (!trip) return;
+  const end = Date.now();
+  endTracking();
+  const s = TaxiFare.summary(trip, end);
+  pending = {
+    id: String(trip.startMs), start: trip.startMs, end,
+    period: s.period, distanceKm: +s.distanceKm.toFixed(3), durationSec: Math.round(s.durationSec),
+    waitingSec: Math.round(s.waitingSec), base: +s.base.toFixed(3), distCharge: +s.distCharge.toFixed(3),
+    waitCharge: +s.waitCharge.toFixed(3), fare: TaxiFare.roundFils(s.fare), minApplied: s.minApplied,
+    gapSec: Math.round(s.gapSec), fixes: s.fixes, tariff: trip.tariffVersion, rate: trip.rate,
+    meter: null, note: ''
+  };
+  trip = null; store.del(KEY_ACTIVE);
+  showResult(pending);
+};
+
+// ===== النتيجة والمقارنة =====
+function showResult(p){
+  $('resWhen').textContent = fmtDate(p.start);
+  $('rBase').textContent = jd(p.base);
+  $('rKm').textContent = p.distanceKm.toFixed(2) + ' كم';
+  $('rDist').textContent = jd(p.distCharge);
+  $('rWaitT').textContent = mmss(p.waitingSec);
+  $('rWait').textContent = jd(p.waitCharge);
+  $('rMinRow').classList.toggle('hidden', !p.minApplied);
+  $('rMin').textContent = jd(p.fare);
+  $('rFare').textContent = jd(p.fare) + ' د.أ';
+  const q = [];
+  if (p.fixes < 5) q.push('قراءات الـ GPS قليلة جدًا، النتيجة مش موثوقة.');
+  if (p.gapSec > 60) q.push('انقطع الـ GPS حوالي ' + mmss(p.gapSec) + ' خلال الرحلة، المسافة الحقيقية غالبًا أطول شوي.');
+  $('rQuality').innerHTML = q.map(esc).join('<br>');
+  $('rQuality').classList.toggle('hidden', !q.length);
+  $('meterIn').value = ''; $('noteIn').value = ''; $('cmp').classList.add('hidden');
+  $('resultCard').classList.remove('hidden');
+  $('resultCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function hideResult(){ $('resultCard').classList.add('hidden'); pending = null; }
+
+function verdict(est, meter){
+  const diff = meter - est, pct = est > 0 ? diff / est * 100 : 0;
+  // هامش: 8% أو 10 قروش، أيهما أكبر (دقة GPS + تقريب العداد)
+  const tol = Math.max(0.10, est * 0.08);
+  if (Math.abs(diff) <= tol) return { cls:'ok', short:'منطقي', text:`العداد قريب من التقدير (فرق ${jd(diff)} د.أ، ${pct.toFixed(0)}%). يبدو سليم.` };
+  if (diff > 0) return { cls:'bad', short:'أعلى', text:`العداد أعلى من التقدير بـ ${jd(diff)} د.أ (${pct.toFixed(0)}%). ممكن يكون في مبالغة، أو الـ GPS قصّر بالمسافة.` };
+  return { cls:'warn', short:'أقل', text:`العداد أقل من التقدير بـ ${jd(-diff)} د.أ (${pct.toFixed(0)}%).` };
+}
+$('meterIn').oninput = () => {
+  const v = parseFloat($('meterIn').value);
+  if (!pending || !isFinite(v) || v <= 0) { $('cmp').classList.add('hidden'); return; }
+  const r = verdict(pending.fare, v);
+  $('cmp').className = 'alert ' + r.cls; $('cmp').textContent = r.text;
+};
+$('saveBtn').onclick = () => {
+  if (!pending) return;
+  const v = parseFloat($('meterIn').value);
+  pending.meter = isFinite(v) && v > 0 ? v : null;
+  pending.note = $('noteIn').value.trim();
+  const arr = store.get(KEY_TRIPS, []);
+  arr.push(pending);
+  if (!store.set(KEY_TRIPS, arr)) { alert('ما قدرت أحفظ — مساحة التخزين ممتلئة أو محظورة.'); return; }
+  const m = monthKey(pending.start);
+  hideResult(); renderTrips(m);
+};
+$('dropBtn').onclick = () => { if (confirm('أكيد بدك تتجاهل هالرحلة؟')) hideResult(); };
+
+// ===== السجل =====
+const monthKey = ms => { const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); };
+function renderTrips(selected){
+  const arr = store.get(KEY_TRIPS, []);
+  const months = [...new Set(arr.map(t => monthKey(t.start)))].sort().reverse();
+  const sel = $('monthSel');
+  const cur = selected || sel.value || months[0];
+  sel.innerHTML = months.length ? months.map(m => `<option value="${m}" ${m===cur?'selected':''}>${m}</option>`).join('')
+                                : '<option>—</option>';
+  const list = arr.filter(t => monthKey(t.start) === cur).sort((a,b) => b.start - a.start);
+  if (!list.length) { $('trips').innerHTML = '<div class="muted">لسا ما في رحلات محفوظة.</div>'; $('monthTotal').textContent = ''; return; }
+  const paid = list.reduce((s,t) => s + (t.meter ?? t.fare), 0);
+  $('monthTotal').textContent = `${list.length} رحلة · المجموع ${jd(paid)} د.أ (المدفوع حسب العداد إذا مسجّل، غير هيك التقدير)`;
+  $('trips').innerHTML = list.map(t => {
+    const v = t.meter ? verdict(t.fare, t.meter) : null;
+    return `<div class="trip">
+      <div class="top"><span>${esc(fmtDate(t.start))}</span>
+        <span class="ltr">${jd(t.meter ?? t.fare)} د.أ <button class="del" data-id="${esc(t.id)}" title="حذف">×</button></span></div>
+      <div class="muted">${t.distanceKm.toFixed(2)} كم · ${mmss(t.durationSec)} · ${periodName(t.period)}
+        · تقدير ${jd(t.fare)}${t.meter ? ` · عداد ${jd(t.meter)} <span class="tag ${v.cls}">${v.short}</span>` : ''}</div>
+      ${t.note ? `<div class="muted">📝 ${esc(t.note)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+$('monthSel').onchange = () => renderTrips($('monthSel').value);
+$('trips').onclick = e => {
+  const b = e.target.closest('.del'); if (!b) return;
+  if (!confirm('حذف هالرحلة؟')) return;
+  store.set(KEY_TRIPS, store.get(KEY_TRIPS, []).filter(t => t.id !== b.dataset.id));
+  renderTrips();
+};
+$('clearBtn').onclick = () => {
+  if (!store.get(KEY_TRIPS, []).length) return;
+  if (confirm('رح ينمسح كل السجل نهائيًا. صدّره قبل إذا بدك. متأكد؟')) { store.del(KEY_TRIPS); renderTrips(); }
+};
+$('csvBtn').onclick = () => {
+  const arr = store.get(KEY_TRIPS, []).sort((a,b) => a.start - b.start);
+  if (!arr.length) { alert('ما في رحلات للتصدير.'); return; }
+  const head = ['التاريخ','الوقت','الفترة','المسافة (كم)','المدة (دقيقة)','الانتظار (دقيقة)','التقدير (د.أ)','قراءة العداد (د.أ)','الفرق (د.أ)','ملاحظة'];
+  const q = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const rows = arr.map(t => { const d = new Date(t.start);
+    return [d.toLocaleDateString('en-CA'), d.toTimeString().slice(0,5), t.period==='day'?'نهاري':'ليلي',
+      t.distanceKm.toFixed(2), (t.durationSec/60).toFixed(1), (t.waitingSec/60).toFixed(1),
+      jd(t.fare), t.meter ? jd(t.meter) : '', t.meter ? jd(t.meter - t.fare) : '', t.note].map(q).join(','); });
+  const blob = new Blob(['﻿' + [head.map(q).join(','), ...rows].join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'taxi-trips-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+// ===== الشاشة بالخلفية =====
+document.addEventListener('visibilitychange', () => {
+  if (!trip) return;
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (hiddenAt) {
+    const sec = (Date.now() - hiddenAt) / 1000; hiddenAt = null;
+    if (sec > 10) showWarn(`التطبيق كان بالخلفية ${mmss(sec)}. لو السيارة كانت ماشية، المسافة بهالفترة انحسبت كخط مستقيم وممكن تكون أقل من الحقيقة.`);
+    lockScreen();
+  }
+});
+
+// ===== رحلة غير منتهية =====
+const saved = store.get(KEY_ACTIVE, null);
+if (saved && saved.startMs) {
+  $('resumeStart').textContent = fmtDate(saved.startMs);
+  $('resumeBox').classList.remove('hidden');
+  $('resumeBtn').onclick = () => { trip = saved; $('resumeBox').classList.add('hidden'); startTracking(); };
+  $('discardBtn').onclick = () => { store.del(KEY_ACTIVE); $('resumeBox').classList.add('hidden'); };
+}
+
+fillSettings(getTariff());
+renderTrips();
+$('period').textContent = periodName(TaxiFare.periodFor(new Date(), getTariff()));
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar"><head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trip Invoice</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#FFD700",
+              "background-light": "#f8f8f5",
+              "background-dark": "#121212",
+              "surface-dark": "#1E1E1E",
+              "text-primary-dark": "#FFFFFF",
+              "text-secondary-dark": "#B3B3B3",
+            },
+            fontFamily: {
+              display: ["Space Grotesk"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+              lg: "1rem",
+              xl: "1.5rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-text-primary-dark">
+<div class="flex h-screen flex-col">
+<header class="flex items-center p-4">
+<button class="flex h-10 w-10 items-center justify-center rounded-full text-background-light">
+<span class="material-symbols-outlined text-3xl">arrow_forward</span>
+</button>
+<h1 class="flex-1 text-center text-xl font-bold text-text-primary-dark pr-10">اكتملت الرحلة</h1>
+</header>
+<main class="flex-1 overflow-y-auto px-4 pb-4">
+<div class="mx-auto max-w-md">
+<div class="mb-6 rounded-xl bg-surface-dark p-6 text-center shadow-lg">
+<h2 class="text-lg text-text-secondary-dark">إجمالي الأجرة</h2>
+<p class="my-2 text-5xl font-bold text-text-primary-dark">25.50<span class="text-2xl"> ريال</span></p>
+<p class="text-sm text-text-secondary-dark">طريقة الدفع: نقداً</p>
+</div>
+<div class="mb-6 rounded-xl bg-surface-dark p-4 shadow-lg">
+<div class="flex items-center gap-4">
+<div class="flex-1">
+<p class="text-xs text-text-secondary-dark">12:00 م - 12:30 م</p>
+<p class="my-1 font-bold text-text-primary-dark">الرياض إلى العليا</p>
+<p class="text-xs text-text-secondary-dark">30 دقيقة | 15 كم</p>
+</div>
+<img alt="Map of the route" class="h-20 w-20 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTZ9e10y75-9ln2qRLXV1rFDhuTx2jLYAMk7Xg9MEXGlc6AniEfDSKUpW7K0LVgg0cHRpB61AXhKiHs-YGWqAd8TntXLyDLsBLHOu-n5nr3ymvGOoHwzFQY3r3aNIsDyC-wM4UfCt_ZfMO6sBNEMQu8K5HrQikwkYUh1xfHeKCpaVEQjAyouRvmhXwiGKKjEfS4qf-o0EHS3L2SfkDWAfwqYn8FR7T1nHxyQMTAXtCKH23btoBWIOP-OjRFOzFQQPKOnk3HasDJhQ"/>
+</div>
+</div>
+<div class="rounded-xl bg-surface-dark p-4 shadow-lg">
+<h3 class="mb-4 text-lg font-bold text-text-primary-dark">تفاصيل الأجرة</h3>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-text-secondary-dark">الأجرة الأساسية</span>
+<span class="font-medium text-text-primary-dark">5.00 ريال</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-secondary-dark">أجرة المسافة</span>
+<span class="font-medium text-text-primary-dark">10.00 ريال</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-secondary-dark">أجرة الوقت</span>
+<span class="font-medium text-text-primary-dark">10.50 ريال</span>
+</div>
+<hr class="border-t border-background-dark/30"/>
+<div class="flex justify-between font-bold">
+<span class="text-text-primary-dark">إجمالي الأجرة</span>
+<span class="text-text-primary-dark">25.50 ريال</span>
+</div>
+</div>
+</div>
+<p class="mt-8 text-center text-text-secondary-dark">شكراً لركوبك معنا 🚖</p>
+</div>
+</main>
+<footer class="sticky bottom-0 bg-surface-dark">
+<div class="p-4">
+<button class="h-14 w-full rounded-xl bg-primary text-lg font-bold text-background-dark">عرض الفاتورة</button>
+</div>
+<div class="flex justify-around border-t border-background-dark/30 py-2">
+<a class="flex flex-col items-center gap-1 text-text-secondary-dark" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-xs">الرئيسية</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-xs">السجل</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-text-secondary-dark" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-xs">الإعدادات</span>
+</a>
+</div>
+</footer>
+</div>
+
+
+</body></html>

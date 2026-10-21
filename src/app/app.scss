@@ -1,0 +1,41 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
+.content { flex: 1; }
+
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  padding: 0.5rem 0.5rem calc(0.75rem + var(--safe-bottom));
+  border-top: 1px solid var(--nav-line);
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+
+  a {
+    flex: 1;
+    max-width: 8rem;
+    min-height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    color: var(--ink-2);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    border-radius: 0.75rem;
+    &.active { color: var(--primary); }
+    &:focus-visible { outline: 2px solid var(--primary); }
+  }
+  svg { width: 24px; height: 24px; margin-block: 4px; }
+}

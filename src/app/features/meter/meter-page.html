@@ -1,0 +1,73 @@
+<div class="page">
+  <header class="page-header"><h1>عداد التاكسي</h1></header>
+
+  @if (session.hasUnfinished(); as startMs) {
+    <div class="alert warn banner" role="status">
+      <p>في رحلة ما انتهت من قبل (بدأت <b class="iso">{{ fmtDate(startMs) }}</b>).</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-go" (click)="resume()">كمّل الرحلة</button>
+        <button type="button" class="btn btn-ghost" (click)="discardUnfinished()">احذفها</button>
+      </div>
+    </div>
+  }
+
+  @if (session.pending() && !running()) {
+    <button type="button" class="alert warn pending" (click)="openResult()">
+      في رحلة منتهية ما انحفظت لسا. <b>اعرض النتيجة ←</b>
+    </button>
+  }
+
+  <button type="button" class="meter" (click)="sheetOpen.set(true)" aria-haspopup="dialog"
+          aria-label="الأجرة الحالية، اضغط لعرض التفاصيل">
+    <span class="lbl">الأجرة الحالية</span>
+    <span class="fare" [class.live]="running()">
+      <span class="num">{{ jd(parts().fare) }}</span><span class="cur">د.أ</span>
+    </span>
+    <span class="stats">
+      <span><small>المسافة</small><b><span class="num">{{ km(parts().distanceKm) }}</span> كم</b></span>
+      <span><small>المدة</small><b class="num">{{ mmss(summary()?.durationSec ?? 0) }}</b></span>
+      <span><small>الانتظار</small><b class="num">{{ mmss(parts().waitingSec) }}</b></span>
+    </span>
+    <span class="chips">
+      <span class="chip">{{ periodName(period()) }}</span>
+      <span class="chip">{{ gpsText() }}</span>
+    </span>
+    <span class="hint">اضغط للتفاصيل</span>
+  </button>
+
+  @if (session.warning()) {
+    <div class="alert warn" role="alert">{{ session.warning() }}</div>
+  }
+
+  <div class="actions">
+    @if (running()) {
+      <button type="button" class="btn btn-lg btn-block btn-stop" [disabled]="busy()" (click)="toggleTrip()">إنهاء الرحلة</button>
+      <button type="button" class="btn btn-lg btn-block btn-ghost-danger reset" (click)="resetTrip()">إعادة ضبط</button>
+    } @else {
+      <button type="button" class="btn btn-lg btn-block btn-go" [disabled]="busy()" (click)="toggleTrip()">ابدأ الرحلة</button>
+      <button type="button" class="btn btn-lg btn-block btn-stop" (click)="resetTrip()">إعادة ضبط</button>
+    }
+  </div>
+
+  <section class="status" aria-live="polite">
+    <div>
+      <p class="s-lbl">الحالة</p>
+      <p class="s-val">{{ status().text }}</p>
+    </div>
+    <span class="dot" [class]="'dot ' + status().cls" aria-hidden="true"></span>
+  </section>
+
+  @if (tipVisible()) {
+    <section class="card tip">
+      <p>التطبيق بيكمّل العدّ لو سكّرت الشاشة أو إجتك مكالمة. لأفضل نتيجة عطّل توفير البطارية للتطبيق.</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" (click)="openBattery()">إعدادات البطارية</button>
+        <button type="button" class="btn btn-ghost" (click)="dismissTip()">فهمت</button>
+      </div>
+    </section>
+  }
+</div>
+
+@if (sheetOpen()) {
+  <app-fare-sheet [parts]="parts()" [live]="running()" (closed)="sheetOpen.set(false)" />
+}

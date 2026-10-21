@@ -1,0 +1,16 @@
+.intro { line-height: 1.9; margin-bottom: 1rem; font-size: .8rem; }
+.wide { grid-column: 1 / -1; }
+.btn-row.wide { margin-top: .5rem; }
+.field label { min-height: 2.6em; display: flex; align-items: flex-end; font-size: .8rem; line-height: 1.3; }
+.msg { margin-top: .75rem; }
+.flush { margin-bottom: 0; }
+.about p { line-height: 1.9; }
+
+.seg {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: .25rem; padding: .25rem;
+  background: var(--surface-2); border-radius: 999px;
+  button {
+    min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font-weight: 500;
+    &.on { background: var(--primary); color: var(--primary-ink); font-weight: 700; }
+  }
+}

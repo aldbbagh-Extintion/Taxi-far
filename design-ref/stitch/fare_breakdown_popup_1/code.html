@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f9c806",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#231f0f",
+                        "content-light": "#181711",
+                        "content-dark": "#f8f8f5",
+                        "subtle-light": "#8c835f",
+                        "subtle-dark": "#a19878",
+                        "border-light": "#e6e4db",
+                        "border-dark": "#3a362a"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col justify-end overflow-x-hidden">
+<div class="absolute inset-0 bg-content-light/60 dark:bg-background-dark/70"></div>
+<div class="relative flex flex-col rounded-t-xl bg-background-light dark:bg-background-dark shadow-2xl">
+<div class="flex h-8 w-full items-center justify-center pt-3">
+<div class="h-1.5 w-10 rounded-full bg-border-light dark:bg-border-dark"></div>
+</div>
+<div class="px-6 pb-6 pt-4">
+<h1 class="text-content-light dark:text-content-dark text-center text-2xl font-bold leading-tight tracking-tight">تفاصيل الأجرة</h1>
+<div class="mt-6 space-y-4">
+<div class="flex items-baseline justify-between">
+<p class="text-subtle-light dark:text-subtle-dark text-base">الأجرة الأساسية</p>
+<p class="text-content-light dark:text-content-dark text-base font-medium">٥٫٠٠ ريال</p>
+</div>
+<div class="flex items-baseline justify-between">
+<p class="text-subtle-light dark:text-subtle-dark text-base">المسافة (١٠ كم)</p>
+<p class="text-content-light dark:text-content-dark text-base font-medium">٨٫٠٠ ريال</p>
+</div>
+<div class="flex items-baseline justify-between">
+<p class="text-subtle-light dark:text-subtle-dark text-base">وقت الانتظار (٥ دقائق)</p>
+<p class="text-content-light dark:text-content-dark text-base font-medium">٢٫٠٠ ريال</p>
+</div>
+<div class="flex items-baseline justify-between">
+<p class="text-subtle-light dark:text-subtle-dark text-base">رسوم إضافية</p>
+<p class="text-content-light dark:text-content-dark text-base font-medium">٢٫٠٠ ريال</p>
+</div>
+</div>
+<div class="my-4 h-px bg-border-light dark:bg-border-dark"></div>
+<div class="flex items-center justify-between">
+<p class="text-content-light dark:text-content-dark text-lg font-bold">الإجمالي</p>
+<p class="text-primary text-2xl font-bold">١٧٫٠٠ ريال</p>
+</div>
+</div>
+<div class="p-6 pt-2">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-primary h-14 px-5 text-background-dark text-lg font-bold transition-transform active:scale-95">
+<span class="truncate">إغلاق</span>
+</button>
+</div>
+</div>
+</div>
+
+</body></html>

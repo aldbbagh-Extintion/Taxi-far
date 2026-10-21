@@ -1,0 +1,50 @@
+<div class="page">
+  <header class="page-header"><h1>الإعدادات</h1></header>
+
+  <section class="card">
+    <h2 class="card-title">إعدادات التعرفة</h2>
+    <p class="muted intro">
+      القيم الافتراضية: فتحة العداد والكيلومتر حسب تعرفة <b>11 أيار 2026</b>.
+      تعرفة الانتظار آخر قيمة رسمية معلنة (حزيران 2025).
+      الحد الأدنى (1.00 د.أ) ومواعيد الفترتين (8:00 نهاري، 20:00 ليلي) نفس النسخة الأصلية.
+    </p>
+    <form class="grid2" (submit)="$event.preventDefault(); save()">
+      @for (f of fields; track f.key) {
+        <div class="field" [class.wide]="f.key === 'min'">
+          <label [for]="'s_' + f.key">{{ f.label }}</label>
+          <input class="input" type="number" [id]="'s_' + f.key" [attr.step]="f.step" [attr.min]="f.min ?? null"
+                 [attr.max]="f.max ?? null" [attr.inputmode]="f.int ? 'numeric' : 'decimal'"
+                 [value]="values()[f.key]" (input)="setVal(f.key, $any($event.target).value)" />
+        </div>
+      }
+      <div class="btn-row wide">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">حفظ الإعدادات</button>
+        <button type="button" class="btn btn-ghost" (click)="resetDefaults()">القيم الافتراضية</button>
+      </div>
+    </form>
+    @if (msg(); as m) {
+      <div class="alert msg" [class.ok]="!m.err" [class.bad]="m.err" role="status">{{ m.text }}</div>
+    }
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">المظهر</h2>
+    <div class="seg" role="radiogroup" aria-label="المظهر">
+      @for (t of themes; track t.mode) {
+        <button type="button" role="radio" [attr.aria-checked]="theme.mode() === t.mode"
+                [class.on]="theme.mode() === t.mode" (click)="theme.set(t.mode)">{{ t.label }}</button>
+      }
+    </div>
+  </section>
+
+  <section class="card section-gap">
+    <h2 class="card-title flush">البطارية</h2>
+    <p class="muted">عشان العدّ يكمّل والشاشة مسكّرة، عطّل توفير البطارية للتطبيق.</p>
+    <button type="button" class="btn btn-ghost btn-block" (click)="openBattery()">فتح إعدادات توفير البطارية</button>
+  </section>
+
+  <section class="card about">
+    <h2 class="card-title">عن التطبيق</h2>
+    <p class="muted">الرقم تقديري حسب الـ GPS، والعداد المعتمد هو المرجع الرسمي. فرق لحد ~5–8% طبيعي.</p>
+  </section>
+</div>
