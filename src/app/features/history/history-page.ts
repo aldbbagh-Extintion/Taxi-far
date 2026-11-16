@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { SavedTrip, TRIP_REPOSITORY } from '../../contracts';
 import { exportCsv, verdict } from '../shared/core-bridge';
-import { fmtDate, jd, km, mmss, monthKey, monthLabel, periodName } from '../shared/format';
+import { fmtDate, jd, km, mmss, monthKey, monthLabel, periodName, tariffNameOf } from '../shared/format';
 import { ConfirmService, ToastService } from '../shared/ui.services';
 
 interface Row { t: SavedTrip; v: ReturnType<typeof verdict> | null; }
@@ -43,6 +43,7 @@ export class HistoryPage {
   protected readonly mmss = mmss;
   protected readonly fmtDate = fmtDate;
   protected readonly periodName = periodName;
+  protected readonly tariffNameOf = tariffNameOf;
   protected readonly monthLabel = monthLabel;
 
   constructor() { this.load(); }

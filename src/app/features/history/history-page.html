@@ -34,7 +34,7 @@
               <span class="amt"><span class="num">{{ jd(r.t.meter ?? r.t.fare) }}</span> د.أ</span>
             </span>
             <span class="meta muted">
-              <span class="num">{{ km(r.t.distanceKm) }}</span> كم · <span class="num">{{ mmss(r.t.durationSec) }}</span> · {{ periodName(r.t.period) }}
+              <span class="num">{{ km(r.t.distanceKm) }}</span> كم · <span class="num">{{ mmss(r.t.durationSec) }}</span> · {{ tariffNameOf(r.t) }} · {{ periodName(r.t.period) }}
               @if (r.t.meter) { · تقدير <span class="num">{{ jd(r.t.fare) }}</span> }
             </span>
             @if (r.v || r.t.note) {

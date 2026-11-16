@@ -27,7 +27,13 @@ export const km = (n: number | null | undefined): string => (Number(n) || 0).toF
 
 export const minutes = (sec: number): number => Math.max(0, Math.round(sec / 60));
 
-export const periodName = (p: Period): string => (p === 'day' ? 'تعرفة نهارية' : 'تعرفة ليلية');
+export const periodName = (p: Period): string =>
+  p === 'flat' ? 'تعرفة واحدة' : p === 'day' ? 'تعرفة نهارية' : 'تعرفة ليلية';
+
+export const DEFAULT_TARIFF_NAME = 'التاكسي الأصفر';
+
+/** اسم التعرفة لرحلة محفوظة (رحلات قديمة بدون اسم = التاكسي الأصفر) */
+export const tariffNameOf = (t: { tariffName?: string }): string => t.tariffName || DEFAULT_TARIFF_NAME;
 
 export const monthKey = (ms: number): string => {
   const d = new Date(ms);
@@ -40,7 +46,9 @@ export const monthLabel = (key: string): string => {
 };
 
 /** Which tariff period applies at a given time (mirrors the original periodFor). */
-export function periodAt(date: Date, t: Tariff): Period {
+export function periodAt(date: Date, t: Tariff | { flat: unknown }): Period {
+  if ('flat' in t && t.flat) return 'flat';
+  t = t as Tariff;
   const h = date.getHours();
   const d = t.dayStartHour, n = t.nightStartHour;
   if (d < n) return h >= d && h < n ? 'day' : 'night';

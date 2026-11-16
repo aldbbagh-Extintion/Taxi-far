@@ -4,7 +4,19 @@
  * كل مقطع بين قراءتين GPS بينحسب إما بالمسافة أو بالوقت، أيهما أعلى.
  * الحالة EngineTrip عبارة عن JSON عادي (بتنحفظ بقاعدة البيانات وبترجع زي ما هي).
  */
-import type { FareSummary, GpsFix, Period, PeriodRate, Tariff } from '../contracts';
+import type {
+  AnyTariff,
+  DualProfile,
+  FareSummary,
+  FlatProfile,
+  GpsFix,
+  Period,
+  PeriodRate,
+  ProfileId,
+  ProfilesState,
+  Tariff,
+  TariffProfile,
+} from '../contracts';
 
 // ===== التعرفة الافتراضية (تحققت منها بتاريخ 2026-10-18) =====
 export const DEFAULT_TARIFF: Readonly<Tariff> = Object.freeze({
@@ -19,6 +31,96 @@ export const DEFAULT_TARIFF: Readonly<Tariff> = Object.freeze({
 /** نسخة قابلة للتعديل من التعرفة الافتراضية */
 export function cloneDefaultTariff(): Tariff {
   return JSON.parse(JSON.stringify(DEFAULT_TARIFF)) as Tariff;
+}
+
+// ===== ملفات التعرفة الثلاثة =====
+// taxi: التاكسي الأصفر (نهاري/ليلي) · mycar: سيارتي (تعرفة واحدة) · other: أخرى (مثل التاكسي)
+export const PROFILE_IDS: readonly ProfileId[] = ['taxi', 'mycar', 'other'];
+export const PROFILE_NAMES: Readonly<Record<ProfileId, string>> = Object.freeze({
+  taxi: 'التاكسي الأصفر',
+  mycar: 'سيارتي',
+  other: 'أخرى',
+});
+
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+
+export const DEFAULT_PROFILES: Readonly<Record<ProfileId, TariffProfile>> = Object.freeze({
+  taxi: { ...clone(DEFAULT_TARIFF), id: 'taxi', name: PROFILE_NAMES.taxi } as DualProfile,
+  mycar: {
+    id: 'mycar',
+    name: PROFILE_NAMES.mycar,
+    version: 'default',
+    flat: { ...DEFAULT_TARIFF.day },
+    minFare: DEFAULT_TARIFF.minFare,
+  } as FlatProfile,
+  other: { ...clone(DEFAULT_TARIFF), id: 'other', name: PROFILE_NAMES.other } as DualProfile,
+});
+
+export function defaultProfiles(): Record<ProfileId, TariffProfile> {
+  return clone(DEFAULT_PROFILES) as Record<ProfileId, TariffProfile>;
+}
+
+const okNum = (v: unknown): v is number => typeof v === 'number' && isFinite(v) && v >= 0;
+const okRate = (r: unknown): r is PeriodRate => {
+  const o = r as PeriodRate | null | undefined;
+  return !!o && okNum(o.base) && okNum(o.perKm) && okNum(o.waitPer35s);
+};
+const okHour = (h: unknown): h is number => Number.isInteger(h) && (h as number) >= 0 && (h as number) <= 23;
+const copyRate = (r: PeriodRate): PeriodRate => ({ base: r.base, perKm: r.perKm, waitPer35s: r.waitPer35s });
+
+/** الملف نفسه (منسوخ) إذا صالح، وإلا null */
+function validProfile(id: ProfileId, p: unknown): TariffProfile | null {
+  const o = p as Record<string, any> | null | undefined;
+  if (!o || typeof o !== 'object' || !okNum(o['minFare'])) return null;
+  const name = PROFILE_NAMES[id];
+  const version = typeof o['version'] === 'string' && o['version'] ? (o['version'] as string) : 'custom';
+  if (id === 'mycar') {
+    if (!okRate(o['flat'])) return null;
+    return { id, name, version, flat: copyRate(o['flat']), minFare: o['minFare'] };
+  }
+  if (
+    !okRate(o['day']) ||
+    !okRate(o['night']) ||
+    !okHour(o['dayStartHour']) ||
+    !okHour(o['nightStartHour']) ||
+    o['dayStartHour'] === o['nightStartHour']
+  ) {
+    return null;
+  }
+  return {
+    id,
+    name,
+    version,
+    dayStartHour: o['dayStartHour'],
+    nightStartHour: o['nightStartHour'],
+    day: copyRate(o['day']),
+    night: copyRate(o['night']),
+    minFare: o['minFare'],
+  };
+}
+
+/** v3 = الحالة المحفوظة {active, profiles} أو null؛ oldTariff = التعرفة القديمة المفردة أو null.
+ *  v3 الصالح يغلب، وإلا القديمة بتهاجر لملف taxi، وإلا الافتراضي. */
+export function loadProfiles(v3: unknown, oldTariff: unknown): ProfilesState {
+  const profiles = defaultProfiles();
+  const s = v3 as { active?: unknown; profiles?: Record<string, unknown> } | null | undefined;
+  if (s && typeof s === 'object' && s.profiles && typeof s.profiles === 'object') {
+    let any = false;
+    for (const id of PROFILE_IDS) {
+      const v = validProfile(id, s.profiles[id]);
+      if (v) {
+        profiles[id] = v;
+        any = true;
+      }
+    }
+    if (any) {
+      const active = PROFILE_IDS.includes(s.active as ProfileId) ? (s.active as ProfileId) : 'taxi';
+      return { active, profiles };
+    }
+  }
+  const m = validProfile('taxi', oldTariff);
+  if (m) profiles.taxi = m;
+  return { active: 'taxi', profiles };
 }
 
 // ===== إعدادات فلترة GPS =====
@@ -44,6 +146,8 @@ export interface EngineTrip {
   rate: PeriodRate;
   minFare: number;
   tariffVersion: string;
+  tariffId?: ProfileId; // رحلات محفوظة قبل الملفات: غير موجود = taxi
+  tariffName?: string;
   anchor: EnginePoint | null; // آخر نقطة معتمدة للمسافة
   lastFixMs: number; // آخر وقت انحسب لغايته
   distanceM: number;
@@ -74,13 +178,15 @@ export function haversineM(a: LatLon, b: LatLon): number {
 
 export function periodFor(
   date: Date,
-  tariff: Pick<Tariff, 'dayStartHour' | 'nightStartHour'>,
+  tariff: Pick<Tariff, 'dayStartHour' | 'nightStartHour'> | { flat: PeriodRate },
 ): Period {
+  if ('flat' in tariff && tariff.flat) return 'flat';
+  const t = tariff as Pick<Tariff, 'dayStartHour' | 'nightStartHour'>;
   const h = date.getHours();
   const isDay =
-    tariff.dayStartHour < tariff.nightStartHour
-      ? h >= tariff.dayStartHour && h < tariff.nightStartHour
-      : h >= tariff.dayStartHour || h < tariff.nightStartHour;
+    t.dayStartHour < t.nightStartHour
+      ? h >= t.dayStartHour && h < t.nightStartHour
+      : h >= t.dayStartHour || h < t.nightStartHour;
   return isDay ? 'day' : 'night';
 }
 
@@ -92,13 +198,16 @@ export function ratesOf(t: PeriodRate): { perSec: number; crossoverKmh: number }
 }
 
 /* ===== رحلة ===== */
-export function createTrip(startMs: number, tariff?: Tariff | null): EngineTrip {
-  const t: Tariff = tariff || (DEFAULT_TARIFF as Tariff);
+export function createTrip(startMs: number, tariff?: AnyTariff | null): EngineTrip {
+  const t: AnyTariff = tariff || (DEFAULT_TARIFF as Tariff);
   const period = periodFor(new Date(startMs), t);
+  const rate = 'flat' in t && t.flat ? t.flat : (t as Tariff)[period as 'day' | 'night'];
   return {
     startMs,
     period,
-    rate: Object.assign({}, t[period]),
+    rate: Object.assign({}, rate),
+    tariffId: t.id ?? 'taxi',
+    tariffName: t.name ?? PROFILE_NAMES[t.id ?? 'taxi'],
     minFare: Number(t.minFare) || 0,
     tariffVersion: t.version || 'custom',
     anchor: null,

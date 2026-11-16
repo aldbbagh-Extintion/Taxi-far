@@ -4,11 +4,12 @@
  */
 import { Capacitor } from '@capacitor/core';
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
-import type { SavedTrip, Tariff, TripRepository } from '../contracts';
+import type { ProfilesState, SavedTrip, Tariff, TripRepository } from '../contracts';
 
 const DB_NAME = 'taxi_meter';
 const SCHEMA_VERSION = 1;
-const KV_TARIFF = 'tariff';
+const KV_TARIFF = 'tariff'; // قديم: للترحيل فقط
+const KV_PROFILES = 'tariff_profiles_v3';
 const KV_ACTIVE = 'active_trip';
 const KV_SCHEMA = 'schema_version';
 
@@ -134,6 +135,12 @@ export class SqliteTripRepository implements TripRepository {
   saveTariff(t: Tariff | null): Promise<void> {
     return this.kvSet(KV_TARIFF, t);
   }
+  getProfiles(): Promise<unknown | null> {
+    return this.kvGet<unknown>(KV_PROFILES);
+  }
+  saveProfiles(s: ProfilesState): Promise<void> {
+    return this.kvSet(KV_PROFILES, s);
+  }
   getActiveTrip(): Promise<unknown | null> {
     return this.kvGet<unknown>(KV_ACTIVE);
   }
@@ -145,7 +152,8 @@ export class SqliteTripRepository implements TripRepository {
 /* ===================== localStorage (متصفح) ===================== */
 const LS_TRIPS = 'taxi_trips_v2',
   LS_ACTIVE = 'taxi_active_v2',
-  LS_TARIFF = 'taxi_tariff_v2';
+  LS_TARIFF = 'taxi_tariff_v2', // قديم: للترحيل فقط
+  LS_PROFILES = 'taxi_tariffs_v3';
 
 const store = {
   get<T>(k: string, d: T): T {
@@ -206,6 +214,12 @@ export class LocalStorageTripRepository implements TripRepository {
   async saveTariff(t: Tariff | null): Promise<void> {
     if (t == null) store.del(LS_TARIFF);
     else store.set(LS_TARIFF, t);
+  }
+  async getProfiles(): Promise<unknown | null> {
+    return store.get<unknown | null>(LS_PROFILES, null);
+  }
+  async saveProfiles(s: ProfilesState): Promise<void> {
+    store.set(LS_PROFILES, s);
   }
   async getActiveTrip(): Promise<unknown | null> {
     return store.get<unknown | null>(LS_ACTIVE, null);

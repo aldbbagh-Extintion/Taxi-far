@@ -19,11 +19,16 @@ export type { Verdict } from './verdict';
 export { buildCsv, exportCsv, csvFileName, CSV_EMPTY_MSG } from './csv-export';
 export {
   DEFAULT_TARIFF,
+  DEFAULT_PROFILES,
+  PROFILE_IDS,
+  PROFILE_NAMES,
+  defaultProfiles,
+  loadProfiles,
   cloneDefaultTariff,
   periodFor,
   ratesOf,
   roundFils,
 } from './fare-engine';
 export { jd, mmss, fmtDate, periodName, monthKey } from './format';
-export { validateTariff, effectiveTariff, TARIFF_INVALID_MSG } from './tariff';
+export { validateTariff, validateProfile, effectiveTariff, TARIFF_INVALID_MSG } from './tariff';
 export { createTripRepository, SqliteTripRepository, LocalStorageTripRepository } from './trip-repository';

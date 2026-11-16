@@ -140,7 +140,7 @@ describe('fare engine equivalence with original-fare.js', () => {
       }
       expect(ts.roundFils(ts.summary(tNew, seq.endMs).fare)).toBe(orig.roundFils(orig.summary(tOrig, seq.endMs).fare));
       // the engine state (minus the display-only lastKind) is identical
-      const { lastKind: _lk, ...rest } = tNew;
+      const { lastKind: _lk, tariffId: _ti, tariffName: _tn, ...rest } = tNew;
       expect(JSON.parse(JSON.stringify(rest))).toEqual(JSON.parse(JSON.stringify(tOrig)));
     });
   }
@@ -293,9 +293,9 @@ describe('buildCsv', () => {
     const lines = csv.split('\r\n');
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     expect(lines[0]).toBe(
-      '﻿"التاريخ","الوقت","الفترة","المسافة (كم)","المدة (دقيقة)","الانتظار (دقيقة)","التقدير (د.أ)","قراءة العداد (د.أ)","الفرق (د.أ)","ملاحظة"',
+      '﻿"التاريخ","الوقت","الفترة","التعرفة","المسافة (كم)","المدة (دقيقة)","الانتظار (دقيقة)","التقدير (د.أ)","قراءة العداد (د.أ)","الفرق (د.أ)","ملاحظة"',
     );
-    expect(lines[1]).toBe('"2026-10-21","09:05","نهاري","3.46","10.0","1.5","1.432","","",""');
-    expect(lines[2]).toBe('"2026-10-21","10:05","ليلي","3.46","10.0","1.5","1.432","1.600","0.168","قال ""تمام"""');
+    expect(lines[1]).toBe('"2026-10-21","09:05","نهاري","التاكسي الأصفر","3.46","10.0","1.5","1.432","","",""');
+    expect(lines[2]).toBe('"2026-10-21","10:05","ليلي","التاكسي الأصفر","3.46","10.0","1.5","1.432","1.600","0.168","قال ""تمام"""');
   });
 });

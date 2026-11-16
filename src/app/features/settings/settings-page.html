@@ -3,13 +3,26 @@
 
   <section class="card">
     <h2 class="card-title">إعدادات التعرفة</h2>
-    <p class="muted intro">
-      القيم الافتراضية: فتحة العداد والكيلومتر حسب تعرفة <b>11 أيار 2026</b>.
-      تعرفة الانتظار آخر قيمة رسمية معلنة (حزيران 2025).
-      الحد الأدنى (1.00 د.أ) ومواعيد الفترتين (8:00 نهاري، 20:00 ليلي) نفس النسخة الأصلية.
-    </p>
+    <div class="seg tabs" role="tablist" aria-label="ملف التعرفة">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" [attr.aria-selected]="selTab() === t.id" [class.on]="selTab() === t.id"
+                (click)="selectTab(t.id)">
+          {{ t.name }}
+          @if (activeId() === t.id) { <small class="used">المستخدمة</small> }
+        </button>
+      }
+    </div>
+    @if (isFlat()) {
+      <p class="muted intro">تعرفة وحدة طول اليوم، بدون نهاري وليلي.</p>
+    } @else if (selTab() === 'taxi') {
+      <p class="muted intro">
+        القيم الافتراضية: فتحة العداد والكيلومتر حسب تعرفة <b>11 أيار 2026</b>.
+        تعرفة الانتظار آخر قيمة رسمية معلنة (حزيران 2025).
+        الحد الأدنى (1.00 د.أ) ومواعيد الفترتين (8:00 نهاري، 20:00 ليلي) نفس النسخة الأصلية.
+      </p>
+    }
     <form class="grid2" (submit)="$event.preventDefault(); save()">
-      @for (f of fields; track f.key) {
+      @for (f of fields(); track f.key) {
         <div class="field" [class.wide]="f.key === 'min'">
           <label [for]="'s_' + f.key">{{ f.label }}</label>
           <input class="input" type="number" [id]="'s_' + f.key" [attr.step]="f.step" [attr.min]="f.min ?? null"

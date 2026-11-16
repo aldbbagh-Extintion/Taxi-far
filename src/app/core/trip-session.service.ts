@@ -1,7 +1,7 @@
 /* trip-session.service.ts — منسّق الرحلة (signals) — بيطبق TripSession من contracts.ts
  * نفس سلوك النسخة الأصلية: بدء/إنهاء، استكمال رحلة غير منتهية، الحفظ، إعدادات التعرفة.
  */
-import { Injectable, OnDestroy, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
 import {
   FareSummary,
   GpsFix,
@@ -9,22 +9,25 @@ import {
   MeterStatus,
   SavedTrip,
   TRIP_REPOSITORY,
-  Tariff,
+  ProfileId,
+  ProfilesState,
+  TariffProfile,
   TripSession,
 } from '../contracts';
 import {
   EngineTrip,
   addFix,
-  cloneDefaultTariff,
   createTrip,
+  defaultProfiles,
   isEngineTrip,
   lastSegmentKind,
+  loadProfiles,
   roundFils,
   summary as fareSummary,
 } from './fare-engine';
 import { jd, mmss } from './format';
 import { RoutePoint, appendRoutePoint, downsampleRoute } from './route';
-import { effectiveTariff, validateTariff } from './tariff';
+import { validateProfile } from './tariff';
 
 export { verdict } from './verdict';
 export type { Verdict } from './verdict';
@@ -62,7 +65,11 @@ export class TripSessionService implements TripSession, OnDestroy {
   private readonly _pending = signal<SavedTrip | null>(null);
   private readonly _hasUnfinished = signal<number | null>(null);
   private readonly _route = signal<[number, number][]>([]);
-  private readonly _tariff = signal<Tariff>(cloneDefaultTariff());
+  private readonly _profiles = signal<ProfilesState>({ active: 'taxi', profiles: defaultProfiles() });
+  private readonly _tariff = computed<TariffProfile>(() => {
+    const s = this._profiles();
+    return s.profiles[s.active];
+  });
 
   readonly status = this._status.asReadonly();
   readonly summary = this._summary.asReadonly();
@@ -71,7 +78,8 @@ export class TripSessionService implements TripSession, OnDestroy {
   readonly pending = this._pending.asReadonly();
   readonly hasUnfinished = this._hasUnfinished.asReadonly();
   readonly route = this._route.asReadonly();
-  readonly tariff = this._tariff.asReadonly();
+  readonly tariff = this._tariff;
+  readonly profiles = this._profiles.asReadonly();
 
   private trip: EngineTrip | null = null;
   private routePts: RoutePoint[] = [];
@@ -106,7 +114,7 @@ export class TripSessionService implements TripSession, OnDestroy {
     }
     try {
       await this.repo.init();
-      this._tariff.set(effectiveTariff(await this.repo.getTariff()));
+      this._profiles.set(loadProfiles(await this.repo.getProfiles(), await this.repo.getTariff()));
       this.unfinished = parseActive(await this.repo.getActiveTrip());
     } catch (e) {
       console.error('[core] repository init failed', e);
@@ -176,6 +184,8 @@ export class TripSessionService implements TripSession, OnDestroy {
         start: trip.startMs,
         end,
         period: s.period,
+        tariffId: trip.tariffId ?? 'taxi',
+        tariffName: trip.tariffName ?? 'التاكسي الأصفر',
         distanceKm: +s.distanceKm.toFixed(3),
         durationSec: Math.round(s.durationSec),
         waitingSec: Math.round(s.waitingSec),
@@ -282,15 +292,19 @@ export class TripSessionService implements TripSession, OnDestroy {
   }
 
   /* ================= التعرفة ================= */
-  async setTariff(t: Tariff | null): Promise<void> {
-    if (t == null) {
-      await this.repo.saveTariff(null);
-      this._tariff.set(cloneDefaultTariff());
-      return;
-    }
-    const clean = validateTariff(t); // بيرمي Error برسالة عربية إذا في قيمة غلط
-    await this.repo.saveTariff(clean);
-    this._tariff.set(clean); // بتنطبق من الرحلة الجاية
+  async setProfile(p: TariffProfile): Promise<void> {
+    const clean = validateProfile(p); // بيرمي Error برسالة عربية إذا في قيمة غلط
+    const cur = this._profiles();
+    const next: ProfilesState = { active: clean.id, profiles: { ...cur.profiles, [clean.id]: clean } };
+    await this.repo.saveProfiles(next);
+    this._profiles.set(next); // بتنطبق من الرحلة الجاية (الرحلة الشغّالة ماخدة نسختها)
+  }
+
+  async resetProfile(id: ProfileId): Promise<void> {
+    const cur = this._profiles();
+    const next: ProfilesState = { active: cur.active, profiles: { ...cur.profiles, [id]: defaultProfiles()[id] } };
+    await this.repo.saveProfiles(next);
+    this._profiles.set(next);
   }
 
   /* ================= داخلي ================= */
@@ -405,7 +419,7 @@ export class TripSessionService implements TripSession, OnDestroy {
       const s = this._summary();
       if (s) {
         this.tracker
-          .updateNotification(NOTIFY_TITLE, `${jd(s.fare)} د.أ · ${s.distanceKm.toFixed(2)} كم`)
+          .updateNotification(NOTIFY_TITLE, `${jd(s.raw)} د.أ · ${s.distanceKm.toFixed(2)} كم`)
           .catch(() => {});
       }
     }

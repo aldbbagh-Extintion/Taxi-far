@@ -29,9 +29,12 @@
       <span><small>الانتظار</small><b class="num">{{ mmss(parts().waitingSec) }}</b></span>
     </span>
     <span class="chips">
-      <span class="chip">{{ periodName(period()) }}</span>
+      <span class="chip">{{ tariffName() }} · {{ periodName(period()) }}</span>
       <span class="chip">{{ gpsText() }}</span>
     </span>
+    @if (minNote(); as mn) {
+      <span class="min-note">الحد الأدنى {{ jd(mn) }} د.أ بينطبق عند إنهاء الرحلة</span>
+    }
     <span class="hint">اضغط للتفاصيل</span>
   </button>
 

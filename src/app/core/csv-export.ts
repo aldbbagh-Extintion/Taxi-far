@@ -11,6 +11,7 @@ const HEAD = [
   'التاريخ',
   'الوقت',
   'الفترة',
+  'التعرفة',
   'المسافة (كم)',
   'المدة (دقيقة)',
   'الانتظار (دقيقة)',
@@ -30,7 +31,8 @@ export function buildCsv(trips: SavedTrip[]): string {
     return [
       d.toLocaleDateString('en-CA'),
       d.toTimeString().slice(0, 5),
-      t.period === 'day' ? 'نهاري' : 'ليلي',
+      t.period === 'flat' ? 'واحدة' : t.period === 'day' ? 'نهاري' : 'ليلي',
+      t.tariffName || 'التاكسي الأصفر',
       t.distanceKm.toFixed(2),
       (t.durationSec / 60).toFixed(1),
       (t.waitingSec / 60).toFixed(1),

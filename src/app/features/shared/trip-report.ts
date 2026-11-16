@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { SavedTrip } from '../../contracts';
 import { FareRows } from './fare-rows';
-import { fmtDay, fmtTime, jd, km, minutes, mmss, periodName } from './format';
+import { fmtDay, fmtTime, jd, km, minutes, mmss, periodName, tariffNameOf } from './format';
 import { RouteSketch } from './route-sketch';
 
 /** Read-only post-trip layout (total, trip card with route sketch, breakdown, GPS quality). */
@@ -14,7 +14,7 @@ import { RouteSketch } from './route-sketch';
     <section class="card total-card">
       <h2>إجمالي الأجرة</h2>
       <p class="total"><span class="num">{{ jd(t.fare) }}</span><span class="cur">د.أ</span></p>
-      <p class="muted">{{ periodName(t.period) }} · تقدير حسب الـ GPS</p>
+      <p class="muted">{{ tariffNameOf(t) }} · {{ periodName(t.period) }} · تقدير حسب الـ GPS</p>
     </section>
 
     <section class="card trip-card">
@@ -69,4 +69,5 @@ export class TripReport {
   protected readonly fmtDay = fmtDay;
   protected readonly fmtTime = fmtTime;
   protected readonly periodName = periodName;
+  protected readonly tariffNameOf = tariffNameOf;
 }

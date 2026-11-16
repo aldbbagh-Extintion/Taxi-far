@@ -44,9 +44,19 @@ export class MeterPage {
     () => this.summary()?.period ?? periodAt(new Date(), this.session.tariff()),
   );
   protected readonly gpsText = computed(() => this.session.gpsText() || 'الموقع متوقف');
+  protected readonly tariffName = computed(() => this.session.tariff().name);
   protected readonly parts = computed<FareParts>(() => {
     const s = this.summary();
-    return s ?? { base: 0, distanceKm: 0, distCharge: 0, waitingSec: 0, waitCharge: 0, minApplied: false, fare: 0 };
+    if (!s) return { base: 0, distanceKm: 0, distCharge: 0, waitingSec: 0, waitCharge: 0, minApplied: false, fare: 0 };
+    // أثناء الرحلة: العداد يبدأ من فتحة العداد (raw)؛ الحد الأدنى بينطبق عند الإنهاء
+    return this.running() ? { ...s, fare: s.raw, minApplied: false } : s;
+  });
+  /** الحد الأدنى بينطبق عند الإنهاء: نعرضه طالما raw أقل منه أثناء الرحلة */
+  protected readonly minNote = computed(() => {
+    const s = this.summary();
+    if (!s || !this.running()) return null;
+    const min = s.fare > s.raw ? s.fare : 0; // fare = max(minFare, raw)
+    return min > 0 ? min : null;
   });
 
   protected readonly jd = jd;

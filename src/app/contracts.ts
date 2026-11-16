@@ -16,8 +16,29 @@ export interface Tariff {
   day: PeriodRate;
   night: PeriodRate;
   minFare: number;        // 0 = none
+  id?: ProfileId;         // ملف التعرفة (الرحلات القديمة/الافتراضي بدون id = taxi)
+  name?: string;
 }
-export type Period = 'day' | 'night';
+/** تعرفة واحدة بدون نهاري/ليلي (ملف «سيارتي») */
+export interface FlatTariff {
+  version: string;
+  flat: PeriodRate;
+  minFare: number;
+  id?: ProfileId;
+  name?: string;
+}
+export type AnyTariff = Tariff | FlatTariff;
+export type Period = 'day' | 'night' | 'flat';
+
+/* ===== Tariff profiles (taxi / mycar / other) ===== */
+export type ProfileId = 'taxi' | 'mycar' | 'other';
+export type DualProfile = Tariff & { id: 'taxi' | 'other'; name: string };
+export type FlatProfile = FlatTariff & { id: 'mycar'; name: string };
+export type TariffProfile = DualProfile | FlatProfile;
+export interface ProfilesState {
+  active: ProfileId;
+  profiles: Record<ProfileId, TariffProfile>;
+}
 
 /* ===== GPS ===== */
 export interface GpsFix {
@@ -53,6 +74,8 @@ export interface SavedTrip {
   start: number;         // epoch ms
   end: number;           // epoch ms
   period: Period;
+  tariffId?: ProfileId;  // رحلات قديمة بدون قيمة = taxi
+  tariffName?: string;
   distanceKm: number;
   durationSec: number;
   waitingSec: number;
@@ -78,8 +101,10 @@ export interface TripRepository {
   saveTrip(trip: SavedTrip): Promise<void>;    // insert or replace
   deleteTrip(id: string): Promise<void>;
   clearTrips(): Promise<void>;
-  getTariff(): Promise<Tariff | null>;         // null = use default
-  saveTariff(t: Tariff | null): Promise<void>; // null = reset to default
+  getTariff(): Promise<Tariff | null>;         // التعرفة القديمة المفردة: للترحيل فقط
+  saveTariff(t: Tariff | null): Promise<void>; // (قديمة)
+  getProfiles(): Promise<unknown | null>;      // الحالة الخام المحفوظة (v3)؛ loadProfiles بتتحقق منها
+  saveProfiles(s: ProfilesState): Promise<void>;
   getActiveTrip(): Promise<unknown | null>;    // serialized engine state of an unfinished trip
   saveActiveTrip(state: unknown | null): Promise<void>;
 }
@@ -126,7 +151,8 @@ export interface TripSession {
   readonly pending: Signal<SavedTrip | null>;    // finished trip awaiting save/discard
   readonly hasUnfinished: Signal<number | null>; // start ms of an interrupted trip, or null
   readonly route: Signal<[number, number][]>;    // live route points
-  readonly tariff: Signal<Tariff>;
+  readonly tariff: Signal<TariffProfile>;        // الملف الفعّال
+  readonly profiles: Signal<ProfilesState>;
 
   init(): Promise<void>;
   start(): Promise<void>;
@@ -136,6 +162,9 @@ export interface TripSession {
   discardUnfinished(): Promise<void>;
   savePending(meter: number | null, note: string): Promise<SavedTrip | null>;
   discardPending(): void;
-  setTariff(t: Tariff | null): Promise<void>;
+  /** يتحقق، يحفظ الملف، ويخليه الفعّال (بتنطبق من الرحلة الجاية) */
+  setProfile(p: TariffProfile): Promise<void>;
+  /** يرجّع ملف واحد للافتراضي (الملف الفعّال ما بتغيّر) */
+  resetProfile(id: ProfileId): Promise<void>;
 }
 export const TRIP_SESSION = new InjectionToken<TripSession>('TRIP_SESSION');

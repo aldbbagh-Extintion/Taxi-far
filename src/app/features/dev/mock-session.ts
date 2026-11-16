@@ -1,14 +1,16 @@
 /* DEV-ONLY fakes for visual testing (used by src/main.dev-mock.ts, never by the real app).
  * MockTripSession simulates a moving taxi around Amman with fake live data. */
-import { Provider, signal } from '@angular/core';
+import { Provider, computed, signal } from '@angular/core';
 import {
-  FareSummary, LOCATION_TRACKER, LocationTracker, MeterStatus, SavedTrip, Tariff, TRIP_REPOSITORY,
-  TRIP_SESSION, TripRepository, TripSession,
+  AnyTariff, FareSummary, LOCATION_TRACKER, LocationTracker, MeterStatus, PeriodRate, ProfileId, ProfilesState,
+  SavedTrip, Tariff, TariffProfile, TRIP_REPOSITORY, TRIP_SESSION, TripRepository, TripSession,
 } from '../../contracts';
-import { DEFAULT_TARIFF } from '../shared/core-bridge';
+import { DEFAULT_TARIFF, defaultProfiles, validateProfile } from '../shared/core-bridge';
 import { periodAt } from '../shared/format';
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
+const rateOf = (t: AnyTariff, p: 'day' | 'night' | 'flat'): PeriodRate =>
+  'flat' in t && t.flat ? t.flat : (t as Tariff)[p as 'day' | 'night'];
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
 function fakeRoute(seed: number, n = 60): [number, number][] {
@@ -23,12 +25,12 @@ function fakeRoute(seed: number, n = 60): [number, number][] {
   return pts;
 }
 
-function fakeTrip(start: number, km: number, min: number, wait: number, meter: number | null, note: string, t: Tariff): SavedTrip {
-  const period = periodAt(new Date(start), t), rate = t[period];
+function fakeTrip(start: number, km: number, min: number, wait: number, meter: number | null, note: string, t: AnyTariff): SavedTrip {
+  const period = periodAt(new Date(start), t), rate = rateOf(t, period);
   const distCharge = r3(km * rate.perKm), waitCharge = r3(Math.floor(wait / 35) * rate.waitPer35s);
   const raw = rate.base + distCharge + waitCharge, fare = r3(Math.max(raw, t.minFare));
   return {
-    id: String(start), start, end: start + min * 60000, period, distanceKm: km, durationSec: min * 60,
+    id: String(start), start, end: start + min * 60000, period, tariffId: 'taxi', tariffName: 'التاكسي الأصفر', distanceKm: km, durationSec: min * 60,
     waitingSec: wait, base: rate.base, distCharge, waitCharge, fare, minApplied: raw < t.minFare,
     gapSec: 0, fixes: 120, tariff: t.version, rate, meter, note, route: fakeRoute(start % 97),
   };
@@ -56,6 +58,9 @@ export class MockTripRepository implements TripRepository {
   async clearTrips() { this.trips = []; }
   async getTariff() { return this.tariff; }
   async saveTariff(t: Tariff | null) { this.tariff = t; }
+  private profiles: ProfilesState | null = null;
+  async getProfiles() { return this.profiles; }
+  async saveProfiles(s: ProfilesState) { this.profiles = s; }
   async getActiveTrip() { return null; }
   async saveActiveTrip() {}
 }
@@ -82,7 +87,8 @@ export class MockTripSession implements TripSession {
   readonly pending = signal<SavedTrip | null>(null);
   readonly hasUnfinished = signal<number | null>(Date.now() - 25 * 60000);
   readonly route = signal<[number, number][]>([]);
-  readonly tariff = signal<Tariff>(clone(DEFAULT_TARIFF) as Tariff);
+  readonly profiles = signal<ProfilesState>({ active: 'taxi', profiles: defaultProfiles() });
+  readonly tariff = computed<TariffProfile>(() => this.profiles().profiles[this.profiles().active]);
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private startMs = 0;
@@ -119,7 +125,7 @@ export class MockTripSession implements TripSession {
   }
 
   private emit() {
-    const t = this.tariff(), period = periodAt(new Date(this.startMs), t), rate = t[period];
+    const t = this.tariff(), period = periodAt(new Date(this.startMs), t), rate = rateOf(t, period);
     const dur = this.tick, moving = Math.max(0, dur - 3);
     const waitingSec = Math.floor(moving / 40) * 10 + Math.max(0, (moving % 40) - 30);
     const distanceKm = (moving - waitingSec) * 0.0105;
@@ -140,10 +146,10 @@ export class MockTripSession implements TripSession {
     if (!s) { this.status.set('idle'); return; }
     const t = this.tariff();
     this.pending.set({
-      id: String(this.startMs), start: this.startMs, end: this.startMs + s.durationSec * 1000, period: s.period,
+      id: String(this.startMs), start: this.startMs, end: this.startMs + s.durationSec * 1000, period: s.period, tariffId: t.id, tariffName: t.name,
       distanceKm: r3(s.distanceKm), durationSec: s.durationSec, waitingSec: s.waitingSec, base: s.base,
       distCharge: r3(s.distCharge), waitCharge: r3(s.waitCharge), fare: r3(s.fare), minApplied: s.minApplied,
-      gapSec: s.gapSec, fixes: s.fixes, tariff: t.version, rate: t[s.period], meter: null, note: '',
+      gapSec: s.gapSec, fixes: s.fixes, tariff: t.version, rate: rateOf(t, s.period), meter: null, note: '',
       route: this.route().length > 1 ? this.route() : fakeRoute(3),
     });
     this.status.set('stopped');
@@ -184,14 +190,15 @@ export class MockTripSession implements TripSession {
     this.status.set('idle');
   }
 
-  async setTariff(t: Tariff | null) {
-    if (t) {
-      const nums = [t.day.base, t.day.perKm, t.day.waitPer35s, t.night.base, t.night.perKm, t.night.waitPer35s, t.minFare];
-      const hs = [t.dayStartHour, t.nightStartHour];
-      if (nums.some((v) => !isFinite(v) || v < 0) || hs.some((h) => !(h >= 0 && h <= 23)) || hs[0] === hs[1])
-        throw new Error('في قيمة غلط، تأكد من الأرقام.');
-    }
-    this.tariff.set(t ? clone(t) : (clone(DEFAULT_TARIFF) as Tariff));
+  async setProfile(p: TariffProfile) {
+    const clean = validateProfile(p);
+    const cur = this.profiles();
+    this.profiles.set({ active: clean.id, profiles: { ...cur.profiles, [clean.id]: clean } });
+  }
+
+  async resetProfile(id: ProfileId) {
+    const cur = this.profiles();
+    this.profiles.set({ active: cur.active, profiles: { ...cur.profiles, [id]: defaultProfiles()[id] } });
   }
 }
 

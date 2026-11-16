@@ -14,7 +14,8 @@ export const mmss = (sec: number): string => {
 export const fmtDate = (ms: number): string =>
   new Date(ms).toLocaleString('ar-JO', { dateStyle: 'medium', timeStyle: 'short' });
 
-export const periodName = (p: Period): string => (p === 'day' ? 'تعرفة نهارية' : 'تعرفة ليلية');
+export const periodName = (p: Period): string =>
+  p === 'flat' ? 'تعرفة واحدة' : p === 'day' ? 'تعرفة نهارية' : 'تعرفة ليلية';
 
 export const monthKey = (ms: number): string => {
   const d = new Date(ms);
