@@ -11,6 +11,9 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  EXPECTED_CERT_SHA256: "44:65:E4:F0:B6:21:89:EE:94:38:38:BC:E5:E2:A6:3B:96:FB:EF:06:EE:CB:F6:71:81:28:F5:16:71:D7:0F:E0"
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -49,10 +52,33 @@ jobs:
       - name: Sync Capacitor Android project
         run: npx cap sync android
 
+      - name: Install fixed signing key
+        env:
+          KS: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KS" ]; then
+            echo "::error::ANDROID_DEBUG_KEYSTORE_B64 secret is missing"
+            exit 1
+          fi
+          mkdir -p ~/.android
+          echo "$KS" | base64 -d > ~/.android/debug.keystore
+
       - name: Build debug APK (Gradle)
         run: |
           chmod +x android/gradlew
           cd android && ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK signer
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          OUT=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK")
+          GOT=$(echo "$OUT" | grep -i 'certificate SHA-256 digest' | head -1 | awk '{print $NF}' | tr -d ':' | tr 'a-f' 'A-F')
+          WANT=$(echo "$EXPECTED_CERT_SHA256" | tr -d ':' | tr 'a-f' 'A-F')
+          echo "signer SHA-256: $GOT"
+          if [ -z "$GOT" ] || [ "$GOT" != "$WANT" ]; then
+            echo "::error::APK signer does not match EXPECTED_CERT_SHA256"
+            exit 1
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

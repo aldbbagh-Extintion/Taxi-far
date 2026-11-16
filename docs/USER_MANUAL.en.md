@@ -28,7 +28,7 @@ The bottom navigation bar has three destinations: «الرئيسية» (Home), �
 3. This is a test (debug) build produced automatically from the latest change in the project, so Android may show a warning when installing it.
 4. After installing, you may switch the unknown-sources option back to what it was.
 
-**Updating over an older copy.** When you install a newer build over the old one, Android keeps the app's data (history and tariffs) as long as the install succeeds. Because builds are produced automatically, Android may refuse the update (with a message such as "App not installed") if the two builds are signed differently; in that case the data cannot be kept if you uninstall the app. So follow this rule before every update:
+**Updating over an older copy.** Builds from this version on are signed with one fixed key, so they install over each other and keep your history and tariffs. Copies installed before this version need one uninstall before the new one is installed, so follow this rule first:
 
 > Open «السجل» (History), tap «تصدير Excel (CSV)» (Export Excel (CSV)) and save the file (or share it to yourself) before updating.
 
