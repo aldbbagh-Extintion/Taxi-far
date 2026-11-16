@@ -75,6 +75,6 @@ npx cap open android     # يفتح المشروع بـ Android Studio
 
 ### ٦. التوقيع الثابت
 - كل بناء في CI يُوقَّع بمفتاح واحد ثابت محفوظ في سرّ المستودع `ANDROID_DEBUG_KEYSTORE_B64` (keystore بصيغة PKCS12 مشفّرة base64؛ الاسم المستعار `androiddebugkey` وكلمة المرور `android`).
-- النسخة الأصلية من المفتاح محليًا في `D:\منوع	axi-meter-signing\debug.keystore` (مع README) — احتفظ بنسخة احتياطية؛ إن ضاع لن تُثبَّت التحديثات فوق التطبيق.
+- النسخة الأصلية من المفتاح محليًا في `D:\منوع\taxi-meter-signing\debug.keystore` (مع README) — احتفظ بنسخة احتياطية؛ إن ضاع لن تُثبَّت التحديثات فوق التطبيق.
 - بصمة الشهادة المتوقعة SHA-256 مكتوبة في `.github/workflows/android-apk.yml` (`EXPECTED_CERT_SHA256`).
 - إن كان السرّ غير موجود يفشل البناء برسالة `::error::`، وإن اختلف موقّع الـ APK عن البصمة المتوقعة يفشل البناء أيضًا.
